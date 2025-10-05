@@ -1,13 +1,37 @@
 from __future__ import annotations
-from typing import Optional, Literal
-from datetime import datetime, date, time
+from typing import Optional
+from datetime import datetime, date
+from enum import Enum
 from sqlmodel import SQLModel, Field
 
+
+# --- Výčty (Enumy) ---
+class ProjectStatus(str, Enum):
+    nove = "nové"
+    probiha = "probíhá"
+    pozastaveno = "pozastaveno"
+    dokonceno = "dokončeno"
+
+
+class TaskStatus(str, Enum):
+    todo = "todo"
+    doing = "doing"
+    done = "done"
+
+
+class MoveType(str, Enum):
+    prijem = "prijem"
+    vydej = "vydej"
+    presun = "presun"
+
+
+# --- Tabulky ---
 class Employee(SQLModel, table=True):
     id: Optional[int] = Field(default=None, primary_key=True)
     name: str
     role: Optional[str] = None
     active: bool = True
+
 
 class Project(SQLModel, table=True):
     id: Optional[int] = Field(default=None, primary_key=True)
@@ -15,8 +39,9 @@ class Project(SQLModel, table=True):
     customer: Optional[str] = None
     start_date: Optional[date] = None
     due_date: Optional[date] = None
-    status: Literal["nové","probíhá","pozastaveno","dokončeno"] = "nové"
+    status: ProjectStatus = Field(default=ProjectStatus.nove)
     notes: Optional[str] = None
+
 
 class Task(SQLModel, table=True):
     id: Optional[int] = Field(default=None, primary_key=True)
@@ -25,7 +50,8 @@ class Task(SQLModel, table=True):
     description: Optional[str] = None
     assignee_id: Optional[int] = Field(default=None, foreign_key="employee.id")
     due_date: Optional[date] = None
-    status: Literal["todo","doing","done"] = "todo"
+    status: TaskStatus = Field(default=TaskStatus.todo)
+
 
 class Item(SQLModel, table=True):
     id: Optional[int] = Field(default=None, primary_key=True)
@@ -33,16 +59,18 @@ class Item(SQLModel, table=True):
     name: str
     unit: str = "ks"
     min_stock: float = 0.0
-    on_hand: float = 0.0  # denormalized for quick overview (updated via stock movements)
+    on_hand: float = 0.0
+
 
 class StockMove(SQLModel, table=True):
     id: Optional[int] = Field(default=None, primary_key=True)
     item_id: int = Field(foreign_key="item.id")
-    move_type: Literal["prijem","vydej","presun"] = "prijem"
+    move_type: MoveType = Field(default=MoveType.prijem)
     quantity: float
-    project_id: Optional[int] = Field(default=None, foreign_key="project.id")  # optional linking to zakázka
+    project_id: Optional[int] = Field(default=None, foreign_key="project.id")
     ref: Optional[str] = None
     created_at: datetime = Field(default_factory=datetime.utcnow)
+
 
 class Timesheet(SQLModel, table=True):
     id: Optional[int] = Field(default=None, primary_key=True)
